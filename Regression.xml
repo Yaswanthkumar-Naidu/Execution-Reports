@@ -1,0 +1,41 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<!--<suite name="Suite">  parallel="tests" thread-count="2">-->
+<suite name="Regression" parallel="tests" thread-count="4">
+      <test name="UITests.TestNG.Common.CS.TC_Locate" >
+        <classes>
+            <class name="UITests.TestNG.Common.CS.TC_Locate" />
+        </classes>
+    </test>
+    <test name="UITests.TestNG.Common.CS.TC_Cases" >
+        <classes>
+            <class name="UITests.TestNG.Common.CS.TC_Cases" />
+        </classes>
+    </test>
+    <test name="UITests.TestNG.Common.CS.TC_Enrollmentscreen" >
+        <classes>
+            <class name="UITests.TestNG.Common.CS.TC_Enrollmentscreen" />
+        </classes>
+    </test>
+    <test name="UITests.TestNG.Common.CS.TC_Intake" >
+        <classes>
+            <class name="UITests.TestNG.Common.CS.TC_Intake" />
+        </classes>
+    </test>
+    <test name="UITests.TestNG.Common.CS.TC_Accounts" >
+        <classes>
+            <class name="UITests.TestNG.Common.CS.TC_Accounts" />
+        </classes>
+    </test>
+    <test name="UITests.TestNG.Common.CS.TC_Contacts" >
+        <classes>
+            <class name="UITests.TestNG.Common.CS.TC_Contacts" />
+        </classes>
+    </test>
+<!--    <test name="UITests.TestNG.Common.CS.TC_Test1" >-->
+<!--        <classes>-->
+<!--            <class name="UITests.TestNG.Common.CS.TC_Test1" />-->
+<!--        </classes>-->
+<!--    </test>-->
+
+
+</suite>
