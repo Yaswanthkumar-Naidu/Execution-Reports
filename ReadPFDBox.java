@@ -27,138 +27,149 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import common_utilities.Utilities.Util;
-import report_utilities.Model.TestCaseParam;
-import report_utilities.Model.ExtentModel.ExtentUtilities;
 import report_utilities.common.ReportCommon;
+import report_utilities.model.TestCaseParam;
+import report_utilities.extent_model.ExtentUtilities;
 import uitests.testng.common.ExcelUtility;
 
 public class ReadPFDBox {
 	private static final Logger logger =LoggerFactory.getLogger(ReadPFDBox.class.getName());
 	
 	ExtentUtilities extentUtilities = new ExtentUtilities();
-	private WebDriver driver;
+	protected WebDriver driver ;
 	ReportCommon exceptionDetails = new ReportCommon();
 	ReportCommon testStepDetails = new ReportCommon();
-	private static final String statusPass="PASS";
-	private static final String statusFail="FAIL";
+	private static String statusPass="PASS";
+	private static String statusFail="FAIL";
 	
 	Util util = new Util();
 	
 	ExcelUtility excelutil=new ExcelUtility();
 	HashMap<String, ArrayList<String>> testcaseDataDBQScreen = new HashMap<>();
 	public ReadPFDBox(){ }
-	public ReadPFDBox(WebDriver wDriver,TestCaseParam testCaseParam) 
+	public ReadPFDBox(WebDriver wDriver) 
 	{ 
-		initializePage(wDriver,testCaseParam);
+		initializePage(wDriver);
 	}
 	
-	public void initializePage(WebDriver wDriver,TestCaseParam testCaseParam) 
+	public void initializePage(WebDriver wDriver) 
 	{
 		driver = wDriver;
 		PageFactory.initElements(driver, this);
 	
 	}
+	public class PDFComparisonException extends Exception {
+	    public PDFComparisonException(String message) {
+	        super(message);
+	    }
 
-	public void validatepdfvspdfCompareLine(TestCaseParam testCaseParam, String pdfSourceFile, String pdfTargetFile, String resultFile, String replacedTextFile, String targetTextFile, int count1) throws Exception 
-	{
-		try {
-			LocalDateTime startTime= LocalDateTime.now();
-			
-			File file1 = new File(pdfSourceFile);
-			PDDocument document = PDDocument.load(file1);
-			File file2 = new File(pdfTargetFile);
-			PDDocument document2 = PDDocument.load(file2);
-			int totalpageofDocument1 = getPageCount(document);
-			int totalpageofDocument2 = getPageCount(document2);
-			String action;
-			String actionDescription;
-			File directory;
-			if(totalpageofDocument1==totalpageofDocument2) { 
-				for(int i=1;i<(totalpageofDocument1-count1)+1;i++) {
-					action = "Verify PDF Page"+i;
-					actionDescription = "Verify PDF Page"+i;
-					String action1 = "Verified Page"+i+":: Pass";
-					String actionDescription1 = "Verified Page"+i+":: Pass";
-					String testcontant2 = readPdfContent(document2,i,totalpageofDocument2-(totalpageofDocument2-i));
-					
-					directory = new File(targetTextFile);
-				    if (! directory.exists()){
-				        directory.mkdirs();
-				    }
-					
-				    try(BufferedWriter out2 = new BufferedWriter(new FileWriter(targetTextFile+"\\TargetTextFile"+i+".txt",StandardCharsets.UTF_8)))
-				    {
-				    	out2.write("");
-						out2.write(testcontant2);
-					
-				    }
-					
-					StringBuilder stringBuilder = new StringBuilder();
+	    public PDFComparisonException(String message, Throwable cause) {
+	        super(message, cause);
+	    }
+	}
+	public void validatepdfvspdfCompareLine(TestCaseParam testCaseParam, String pdfSourceFile, String pdfTargetFile, String resultFile, String replacedTextFile, String targetTextFile, int count1) throws PDFComparisonException, InterruptedException {
+	    try {
+	        LocalDateTime startTime = LocalDateTime.now();
 
-					
-					try(BufferedReader br=new BufferedReader(new FileReader(replacedTextFile+"\\"+"ReplacedTextFile"+i+".txt",StandardCharsets.UTF_8)))
-					{
-						String replacedtxtlines=br.readLine();
-						while(replacedtxtlines!=null) 
-						{
-							stringBuilder.append(replacedtxtlines);
-							replacedtxtlines=br.readLine();
-							
-						}
-					}
-					
-					
-					
-					Thread.sleep(6000);
-					String testcontant1 = stringBuilder.toString().trim().replace("\\s", "").replace("\\n", "").replace("\\t", "");
+	        File file1 = new File(pdfSourceFile);
+	        PDDocument document = PDDocument.load(file1);
+	        File file2 = new File(pdfTargetFile);
+	        PDDocument document2 = PDDocument.load(file2);
+	        int totalpageofDocument1 = getPageCount(document);
+	        int totalpageofDocument2 = getPageCount(document2);
+	        if (totalpageofDocument1 == totalpageofDocument2) {
+	            for (int i = 1; i < (totalpageofDocument1 - count1) + 1; i++) {
+	                extracted(testCaseParam, resultFile, replacedTextFile, targetTextFile, startTime, document2,
+	                        totalpageofDocument2, i);
+	            }
+	        } else {
+	            throw new PDFComparisonException("Page count for Source and Target PDF mismatched");
+	        }
+	    } catch (IOException e) {
+	        throw new PDFComparisonException("Error loading PDF documents", e);
+	    }
+	}
 
-					
-					testcontant2=testcontant2.trim().replaceAll("\\s", "").replace("\\n", "").replace("\\t", "");
-					if(!testcontant1.equalsIgnoreCase(testcontant2)){
+	
+	private void extracted(TestCaseParam testCaseParam, String resultFile, String replacedTextFile,
+			String targetTextFile, LocalDateTime startTime, PDDocument document2, int totalpageofDocument2, int i)
+			throws IOException, InterruptedException {
+		String action;
+		String actionDescription;
+		File directory;
+		action = "Verify PDF Page"+i;
+		actionDescription = "Verify PDF Page"+i;
+		String action1 = "Verified Page"+i+":: Pass";
+		String actionDescription1 = "Verified Page"+i+":: Pass";
+		String testcontant2 = readPdfContent(document2,i,totalpageofDocument2-(totalpageofDocument2-i));
+		
+		directory = new File(targetTextFile);
+		if (! directory.exists()){
+		    directory.mkdirs();
+		}
+		
+		try(BufferedWriter out2 = new BufferedWriter(new FileWriter(targetTextFile+"\\TargetTextFile"+i+".txt",StandardCharsets.UTF_8)))
+		{
+			out2.write("");
+			out2.write(testcontant2);
+		
+		}
+		
+		StringBuilder stringBuilder = new StringBuilder();
+
+		
+		try(BufferedReader br=new BufferedReader(new FileReader(replacedTextFile+"\\"+"ReplacedTextFile"+i+".txt",StandardCharsets.UTF_8)))
+		{
+			String replacedtxtlines=br.readLine();
+			while(replacedtxtlines!=null) 
+			{
+				stringBuilder.append(replacedtxtlines);
+				replacedtxtlines=br.readLine();
 				
-						String targetTxtFile=targetTextFile+"\\TargetTextFile"+i+".txt";
-						
-						
-						String replacedtxtFile=replacedTextFile+"\\ReplacedTextFile"+i+".txt";
-						List<String> linenumber = textdiffutil(replacedtxtFile,targetTxtFile);
-						directory = new File(resultFile);
-					    if (! directory.exists())
-					    {
-					        directory.mkdirs();
-					    }
-					    try(BufferedWriter out = new BufferedWriter(new FileWriter(resultFile+"\\ResultFile"+i+".txt",StandardCharsets.UTF_8)))
-					    {
-					    	out.write("");
-							out.write("Difference in lines of SourcefilePage"+i+"::\r\n"+linenumber);
-							testStepDetails.logPDFDetails(testCaseParam, action+"\r\n"+linenumber, actionDescription+"\r\n"+linenumber, startTime, statusFail,"Difference in lines of SourcefilePage"+i+"::\r\n"+linenumber);
-							
-					    }
-						
-					    logger.info("Source and Target Page :: Didn't match {}", i );
-					}else {
-						logger.info("Page are equal {} ", i);
-						testStepDetails.logPDFDetailsPass(testCaseParam, action1, actionDescription1, startTime, statusPass);
-					}
-				}
-			}else {
-				logger.info("Page count for Source and Target PDF mismatched");
 			}
 		}
-		catch (Exception e)
-		{Thread.sleep(0);
-			throw e;
+		
+		
+		
+		Thread.sleep(6000);
+		String testcontant1 = stringBuilder.toString().trim().replace("\\s", "").replace("\\n", "").replace("\\t", "");
+
+		
+		testcontant2=testcontant2.trim().replaceAll("\\s", "").replace("\\n", "").replace("\\t", "");
+		if(!testcontant1.equalsIgnoreCase(testcontant2)){
+
+			String targetTxtFile=targetTextFile+"\\TargetTextFile"+i+".txt";
+			
+			
+			String replacedtxtFile=replacedTextFile+"\\ReplacedTextFile"+i+".txt";
+			List<String> linenumber = textdiffutil(replacedtxtFile,targetTxtFile);
+			directory = new File(resultFile);
+		    if (! directory.exists())
+		    {
+		        directory.mkdirs();
+		    }
+		    try(BufferedWriter out = new BufferedWriter(new FileWriter(resultFile+"\\ResultFile"+i+".txt",StandardCharsets.UTF_8)))
+		    {
+		    	out.write("");
+				out.write("Difference in lines of SourcefilePage"+i+"::\r\n"+linenumber);
+				testStepDetails.logPDFDetails(testCaseParam, action+"\r\n"+linenumber, actionDescription+"\r\n"+linenumber, startTime, statusFail,"Difference in lines of SourcefilePage"+i+"::\r\n"+linenumber);
+				
+		    }
+			
+		    logger.info("Source and Target Page :: Didn't match {}", i );
+		}else {
+			logger.info("Page are equal {} ", i);
+			testStepDetails.logPDFDetailsPass(testCaseParam, action1, actionDescription1, startTime, statusPass);
 		}
 	}
 	
 	public static List<String> textdiffutil(String path1, String path2) throws IOException {
-	    List<String> lines1;
-	    List<String> lines2;
+	   
 	    List<String> delta1 = new ArrayList<>();
 
 	    try (FileReader fileReader1 = new FileReader(path1);
 	         FileReader fileReader2 = new FileReader(path2)) {
-	        lines1 = readLines(fileReader1);
-	        lines2 = readLines(fileReader2);
+	       
 	    }
 	    return delta1;
 	}
@@ -187,8 +198,7 @@ public class ReadPFDBox {
 	}
 	public static int getPageCount(PDDocument doc) {
 		
-		int pageCount = doc.getNumberOfPages();
-		return pageCount;
+		return doc.getNumberOfPages();
 	}
 	
 	public static boolean compareImage() { 
@@ -304,19 +314,9 @@ public class ReadPFDBox {
 	}
 
 	public static void pdfToHTML(String sourcepdf, String outputfile) throws IOException {
-		
-		PDDocument document = PDDocument.load(new File(sourcepdf));
-		try {
-		
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		Writer output = new PrintWriter(outputfile, "utf-8");
-		output.close();
-	}
-	
-	public static String targetfiletxt(String targetfile, String placeHolder, String testData, int noofplhld) {
-		String outputfilename = "C://Users//sahlalwani//Documents//STOMACH-pdf-replacedtest12341.pdf";
-		return outputfilename;
+	    PDDocument document = PDDocument.load(new File(sourcepdf));
+	    Writer output = new PrintWriter(outputfile, "utf-8");
+	    output.close();
+	    document.close();
 	}
 }
